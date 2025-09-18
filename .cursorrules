@@ -1,0 +1,61 @@
+# Cursor Rules for Xactimate PDF Comparator
+
+## Core Principle: Real Data Only
+**NEVER use mock data, sample data, or hardcoded values. ALWAYS process and use the actual data uploaded by users.**
+
+## Data Processing Rules
+
+### 1. PDF Processing
+- **NO MOCK DATA**: Remove all hardcoded line items, quantities, prices, or descriptions
+- **REAL PDF PARSING**: Implement actual PDF text extraction and parsing
+- **USER UPLOADS**: Only process files that users actually upload
+- **NO SAMPLE VALUES**: Never use placeholder numbers like "273.18", "161.81", etc.
+
+### 2. API Endpoints
+- **REAL FILE PROCESSING**: `/api/process-pdf` must extract actual content from uploaded PDFs
+- **ACTUAL COMPARISONS**: `/api/compare-pdfs` must compare real data, not simulated data
+- **NO HARDCODED RESULTS**: Remove all mock comparison results
+
+### 3. Data Flow
+- **UPLOAD → PARSE**: PDF upload → extract text → parse line items → calculate totals
+- **COMPARE → ANALYZE**: Real data comparison → actual difference calculations
+- **EXPORT → REAL DATA**: CSV/TSV export must contain actual extracted data
+
+### 4. Implementation Requirements
+- **PDF LIBRARY**: Use actual PDF parsing libraries (pdf-parse, pdfjs-dist, etc.)
+- **TEXT EXTRACTION**: Extract real text content from PDF pages
+- **PATTERN MATCHING**: Implement regex patterns to find actual line items
+- **CALCULATIONS**: Perform real math on extracted values
+
+### 5. Error Handling
+- **PARSE FAILURES**: Handle cases where PDF parsing fails gracefully
+- **MISSING DATA**: Deal with PDFs that don't contain expected Xactimate format
+- **USER FEEDBACK**: Inform users when data extraction issues occur
+
+### 6. Code Examples - WHAT NOT TO DO
+```typescript
+// ❌ NEVER DO THIS - Mock data
+const mockLineItems: LineItem[] = [
+  { description: 'Tear off shingles', quantity: 3.79, rcv: 273.18 }
+];
+
+// ❌ NEVER DO THIS - Hardcoded values
+const total = 273.18 + 161.81 + 1346.53;
+```
+
+### 7. Code Examples - WHAT TO DO
+```typescript
+// ✅ ALWAYS DO THIS - Real data processing
+const extractedText = await extractPDFText(uploadedFile);
+const lineItems = parseXactimateLineItems(extractedText);
+const totals = calculateRealTotals(lineItems);
+```
+
+## Enforcement
+- **IMMEDIATE REMOVAL**: Any mock data found must be removed immediately
+- **REAL IMPLEMENTATION**: Replace with actual PDF processing logic
+- **TESTING**: Test with real Xactimate PDFs, not simulated data
+- **CODE REVIEW**: Always verify no hardcoded values exist
+
+## Current Status
+The application currently contains mock data that MUST be replaced with real PDF processing functionality. Focus on implementing actual PDF text extraction and Xactimate line item parsing. 
