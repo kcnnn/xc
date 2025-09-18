@@ -1,0 +1,81 @@
+
+
+# 0) install deps (fresh) and make sure you’re on main
+npm ci || npm install
+git checkout main
+
+# 1) Ensure Next is configured for GitHub Pages at /xc
+cat > next.config.ts <<'TS'
+import type { NextConfig } from "next";
+
+const isProd = process.env.NODE_ENV === "production";
+
+const nextConfig: NextConfig = {
+  output: "export",
+  images: { unoptimized: true },
+  basePath: isProd ? "/xc" : "",
+  assetPrefix: isProd ? "/xc/" : "",
+  trailingSlash: true,
+};
+
+export default nextConfig;
+TS
+
+# 2) Create the GitHub Actions workflow
+mkdir -p .github/workflows
+cat > .github/workflows/pages.yml <<'YAML'
+name: Deploy Next.js to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: SPA 404 fallback
+        run: cp out/index.html out/404.html
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+YAML
+
+# 3) (You already did this) but double-check build script exports to /out
+# If needed, run this to set it automatically:
+npx json -I -f package.json -e 'this.scripts.build="next build && next export -o out"'
+
+# 4) Test locally so we know it builds
+npm run build
+# (Optional) open the static output
+# macOS:
+[ -f out/index.html ] && open out/index.html || echo "No out/index.html—build failed"
+
+# 5) Commit and push
+git add next.config.ts .github/workflows/pages.yml package.json
+git commit -m "Configure static export and Pages deploy"
+git push origin main
+
