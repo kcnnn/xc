@@ -5,7 +5,7 @@ import { FileText, AlertCircle, CheckCircle } from 'lucide-react';
 import PDFUploader from '@/components/PDFUploader';
 import ComparisonResults from '@/components/ComparisonResults';
 import { PDFData } from '@/types/pdf';
-import { comparePDFs } from '@/utils/pdfProcessor';
+// comparePDFs is now handled by API route
 
 interface ComparisonItem {
   lineItemNumber_Estimate1?: string;

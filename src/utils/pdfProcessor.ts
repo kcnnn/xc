@@ -1,10 +1,6 @@
 import { PDFData, LineItem, Page5Summary } from '@/types/pdf';
 
-export async function processPDF(file: File): Promise<PDFData> {
-  // This function is only used client-side, so we'll use pdf-parse instead
-  // which is more suitable for server-side processing
-  throw new Error('processPDF should be called from the API route, not directly from client');
-}
+// processPDF is now handled by API route
 
 function parseLineItems(text: string): LineItem[] {
   const lineItems: LineItem[] = [];
