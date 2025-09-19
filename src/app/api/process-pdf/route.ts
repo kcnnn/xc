@@ -75,7 +75,7 @@ function parseXactimateLineItems(text: string): LineItem[] {
     if (match) {
       try {
         const [
-          fullMatch,
+          ,
           lineNumber,
           description,
           quantityStr,

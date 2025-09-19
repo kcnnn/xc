@@ -1,10 +1,66 @@
 'use client';
 
 import { useState } from 'react';
-import { Upload, FileText, Download, AlertCircle, CheckCircle, Bug } from 'lucide-react';
+import { FileText, AlertCircle, CheckCircle } from 'lucide-react';
 import PDFUploader from '@/components/PDFUploader';
 import ComparisonResults from '@/components/ComparisonResults';
 import { PDFData } from '@/types/pdf';
+import { processPDF, comparePDFs } from '@/utils/pdfProcessor';
+
+interface ComparisonItem {
+  lineItemNumber_Estimate1?: string;
+  lineItemNumber_Estimate2?: string;
+  description: string;
+  quantity_Estimate1?: number;
+  quantity_Estimate2?: number;
+  unit_Estimate1?: string;
+  unit_Estimate2?: string;
+  tax_Estimate1?: number;
+  tax_Estimate2?: number;
+  rcv_Estimate1?: number;
+  rcv_Estimate2?: number;
+  ageLife_Estimate1?: string;
+  ageLife_Estimate2?: string;
+  condition_Estimate1?: string;
+  condition_Estimate2?: string;
+  depPercent_Estimate1?: string;
+  depPercent_Estimate2?: string;
+  depreciation_Estimate1?: number;
+  depreciation_Estimate2?: number;
+  acv_Estimate1?: number;
+  acv_Estimate2?: number;
+  category_Estimate1?: string;
+  category_Estimate2?: string;
+  rcv_Diff?: number;
+  depreciation_Diff?: number;
+  acv_Diff?: number;
+  quantity_Diff?: number;
+}
+
+interface Page5Comparison {
+  laborSubtotal_Diff: number;
+  materialsSubtotal_Diff: number;
+  equipmentSubtotal_Diff: number;
+  otherSubtotal_Diff: number;
+  subtotalBeforeOandP_Diff: number;
+  overheadAndProfit_Diff: number;
+  subtotalAfterOandP_Diff: number;
+  salesTax_Diff: number;
+  totalRCV_Diff: number;
+  totalDepreciation_Diff: number;
+  totalACV_Diff: number;
+  grandTotal_Diff: number;
+}
+
+interface ComparisonResults {
+  matchingItems: number;
+  differences: number;
+  totalItems: number;
+  csvData: string;
+  detailedComparison: ComparisonItem[];
+  page5Comparison: Page5Comparison;
+}
+
 
 export default function Home() {
   const [pdfData, setPdfData] = useState<{ first: PDFData | null; second: PDFData | null }>({
@@ -12,33 +68,23 @@ export default function Home() {
     second: null
   });
   const [isProcessing, setIsProcessing] = useState(false);
-  const [comparisonResults, setComparisonResults] = useState<any>(null);
+  const [comparisonResults, setComparisonResults] = useState<ComparisonResults | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   const handlePDFUpload = async (file: File, position: 'first' | 'second') => {
     setError(null);
     setIsProcessing(true);
     
     try {
-      const formData = new FormData();
-      formData.append('file', file);
+      const pdfData = await processPDF(file);
       
-      const response = await fetch('/api/process-pdf', {
-        method: 'POST',
-        body: formData,
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to process PDF');
-      }
-      
-      const processedData = await response.json();
       setPdfData(prev => ({
         ...prev,
-        [position]: processedData
+        [position]: pdfData
       }));
+      
+      // Clear comparison results when new PDF is uploaded
+      setComparisonResults(null);
     } catch (err) {
       setError(`Error processing ${file.name}: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
@@ -46,27 +92,6 @@ export default function Home() {
     }
   };
 
-  const handleDebugPDF = async (file: File) => {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const response = await fetch('/api/debug-pdf', {
-        method: 'POST',
-        body: formData,
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to debug PDF');
-      }
-      
-      const debugData = await response.json();
-      setDebugInfo(debugData);
-    } catch (err) {
-      setError(`Debug error: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    }
-  };
 
   const handleCompare = async () => {
     if (!pdfData.first || !pdfData.second) {
@@ -78,26 +103,10 @@ export default function Home() {
     setError(null);
 
     try {
-      const response = await fetch('/api/compare-pdfs', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          first: pdfData.first,
-          second: pdfData.second
-        }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to compare PDFs');
-      }
-      
-      const results = await response.json();
+      const results = comparePDFs(pdfData.first, pdfData.second);
       setComparisonResults(results);
     } catch (err) {
-      setError('Error comparing PDFs. Please try again.');
+      setError(`Error comparing PDFs: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setIsProcessing(false);
     }
@@ -119,38 +128,6 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Debug Section */}
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Bug className="w-5 h-5 text-yellow-600 mr-2" />
-              <span className="font-medium text-yellow-800">Debug Mode</span>
-            </div>
-            <input
-              type="file"
-              accept=".pdf"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleDebugPDF(file);
-              }}
-              className="text-sm text-yellow-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-yellow-100 file:text-yellow-700 hover:file:bg-yellow-200"
-            />
-          </div>
-          {debugInfo && (
-            <div className="mt-4 p-3 bg-white rounded border">
-              <h4 className="font-semibold mb-2">PDF Debug Info:</h4>
-              <p className="text-sm text-gray-600 mb-2">
-                <strong>Filename:</strong> {debugInfo.filename} | 
-                <strong>Pages:</strong> {debugInfo.pages} | 
-                <strong>Text Length:</strong> {debugInfo.textLength}
-              </p>
-              <details className="text-sm">
-                <summary className="cursor-pointer text-blue-600">View First 500 Characters</summary>
-                <pre className="mt-2 p-2 bg-gray-100 rounded text-xs overflow-x-auto">{debugInfo.first500Chars}</pre>
-              </details>
-            </div>
-          )}
-        </div>
 
         {/* Upload Section */}
         <div className="grid md:grid-cols-2 gap-8 mb-12">
@@ -162,7 +139,6 @@ export default function Home() {
             <PDFUploader
               onUpload={(file) => handlePDFUpload(file, 'first')}
               uploadedFile={pdfData.first}
-              position="first"
             />
           </div>
 
@@ -174,7 +150,6 @@ export default function Home() {
             <PDFUploader
               onUpload={(file) => handlePDFUpload(file, 'second')}
               uploadedFile={pdfData.second}
-              position="second"
             />
           </div>
         </div>

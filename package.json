@@ -2,13 +2,12 @@
   "name": "xactimate-compare",
   "version": "0.1.0",
   "private": true,
-"scripts": {
-  "dev": "next dev --turbo",
-  "build": "next build && next export -o out",
-  "start": "next start",
-  "lint": "eslint"
-}
-
+  "scripts": {
+    "dev": "next dev --turbo",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
   "dependencies": {
     "csv-writer": "^1.6.0",
     "lucide-react": "^0.542.0",

@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
   basePath: isProd ? "/xc" : "",
   assetPrefix: isProd ? "/xc/" : "",
   trailingSlash: true,
+  outputFileTracingRoot: "/Users/ken/xactimate-compare",
 };
 
 export default nextConfig;

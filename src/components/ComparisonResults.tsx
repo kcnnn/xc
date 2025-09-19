@@ -1,6 +1,51 @@
 'use client';
 
-import { Download, TrendingUp, AlertTriangle, CheckCircle, DollarSign, Percent, Hash, Calculator } from 'lucide-react';
+import { Download, TrendingUp, AlertTriangle, CheckCircle, DollarSign, Hash, Calculator } from 'lucide-react';
+
+interface ComparisonItem {
+  lineItemNumber_Estimate1?: string;
+  lineItemNumber_Estimate2?: string;
+  description: string;
+  quantity_Estimate1?: number;
+  quantity_Estimate2?: number;
+  unit_Estimate1?: string;
+  unit_Estimate2?: string;
+  tax_Estimate1?: number;
+  tax_Estimate2?: number;
+  rcv_Estimate1?: number;
+  rcv_Estimate2?: number;
+  ageLife_Estimate1?: string;
+  ageLife_Estimate2?: string;
+  condition_Estimate1?: string;
+  condition_Estimate2?: string;
+  depPercent_Estimate1?: string;
+  depPercent_Estimate2?: string;
+  depreciation_Estimate1?: number;
+  depreciation_Estimate2?: number;
+  acv_Estimate1?: number;
+  acv_Estimate2?: number;
+  category_Estimate1?: string;
+  category_Estimate2?: string;
+  rcv_Diff?: number;
+  depreciation_Diff?: number;
+  acv_Diff?: number;
+  quantity_Diff?: number;
+}
+
+interface Page5Comparison {
+  laborSubtotal_Diff: number;
+  materialsSubtotal_Diff: number;
+  equipmentSubtotal_Diff: number;
+  otherSubtotal_Diff: number;
+  subtotalBeforeOandP_Diff: number;
+  overheadAndProfit_Diff: number;
+  subtotalAfterOandP_Diff: number;
+  salesTax_Diff: number;
+  totalRCV_Diff: number;
+  totalDepreciation_Diff: number;
+  totalACV_Diff: number;
+  grandTotal_Diff: number;
+}
 
 interface ComparisonResultsProps {
   results: {
@@ -8,8 +53,8 @@ interface ComparisonResultsProps {
     differences: number;
     totalItems: number;
     csvData: string;
-    detailedComparison: any[];
-    page5Comparison: any;
+    detailedComparison: ComparisonItem[];
+    page5Comparison: Page5Comparison;
   };
 }
 

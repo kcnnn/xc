@@ -8,10 +8,9 @@ import { PDFData } from '@/types/pdf';
 interface PDFUploaderProps {
   onUpload: (file: File) => void;
   uploadedFile: PDFData | null;
-  position: 'first' | 'second';
 }
 
-export default function PDFUploader({ onUpload, uploadedFile, position }: PDFUploaderProps) {
+export default function PDFUploader({ onUpload, uploadedFile }: PDFUploaderProps) {
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       onUpload(acceptedFiles[0]);

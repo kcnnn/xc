@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PDFData, LineItem, Page5Comparison } from '@/types/pdf';
+import { PDFData, Page5Summary, Page5Comparison } from '@/types/pdf';
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,8 +23,47 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function comparePDFs(first: PDFData, second: PDFData): any {
-  const allItems = new Map<string, any>();
+interface ComparisonItem {
+  lineItemNumber_Estimate1?: string;
+  lineItemNumber_Estimate2?: string;
+  description: string;
+  quantity_Estimate1?: number;
+  quantity_Estimate2?: number;
+  unit_Estimate1?: string;
+  unit_Estimate2?: string;
+  tax_Estimate1?: number;
+  tax_Estimate2?: number;
+  rcv_Estimate1?: number;
+  rcv_Estimate2?: number;
+  ageLife_Estimate1?: string;
+  ageLife_Estimate2?: string;
+  condition_Estimate1?: string;
+  condition_Estimate2?: string;
+  depPercent_Estimate1?: string;
+  depPercent_Estimate2?: string;
+  depreciation_Estimate1?: number;
+  depreciation_Estimate2?: number;
+  acv_Estimate1?: number;
+  acv_Estimate2?: number;
+  category_Estimate1?: string;
+  category_Estimate2?: string;
+  rcv_Diff?: number;
+  depreciation_Diff?: number;
+  acv_Diff?: number;
+  quantity_Diff?: number;
+}
+
+interface ComparisonResults {
+  matchingItems: number;
+  differences: number;
+  totalItems: number;
+  detailedComparison: ComparisonItem[];
+  page5Comparison: Page5Comparison;
+  csvData: string;
+}
+
+function comparePDFs(first: PDFData, second: PDFData): ComparisonResults {
+  const allItems = new Map<string, ComparisonItem>();
   
   // Process first estimate
   first.lineItems.forEach(item => {
@@ -61,7 +100,8 @@ function comparePDFs(first: PDFData, second: PDFData): any {
   second.lineItems.forEach(item => {
     if (allItems.has(item.description)) {
       const existing = allItems.get(item.description);
-      existing.lineItemNumber_Estimate2 = item.lineItemNumber;
+      if (existing) {
+        existing.lineItemNumber_Estimate2 = item.lineItemNumber;
       existing.quantity_Estimate2 = item.quantity;
       existing.unit_Estimate2 = item.unit;
       existing.tax_Estimate2 = item.tax;
@@ -72,11 +112,12 @@ function comparePDFs(first: PDFData, second: PDFData): any {
       existing.depreciation_Estimate2 = item.depreciation;
       existing.acv_Estimate2 = item.acv;
       
-      // Calculate differences
-      existing.rcv_Diff = existing.rcv_Estimate2 - existing.rcv_Estimate1;
-      existing.depreciation_Diff = existing.depreciation_Estimate2 - existing.depreciation_Estimate1;
-      existing.acv_Diff = existing.acv_Estimate2 - existing.acv_Estimate1;
-      existing.quantity_Diff = existing.quantity_Estimate2 - existing.quantity_Estimate1;
+        // Calculate differences
+        existing.rcv_Diff = (existing.rcv_Estimate2 || 0) - (existing.rcv_Estimate1 || 0);
+        existing.depreciation_Diff = (existing.depreciation_Estimate2 || 0) - (existing.depreciation_Estimate1 || 0);
+        existing.acv_Diff = (existing.acv_Estimate2 || 0) - (existing.acv_Estimate1 || 0);
+        existing.quantity_Diff = (existing.quantity_Estimate2 || 0) - (existing.quantity_Estimate1 || 0);
+      }
     } else {
       allItems.set(item.description, {
         lineItemNumber_Estimate1: '',
@@ -128,7 +169,7 @@ function comparePDFs(first: PDFData, second: PDFData): any {
   };
 }
 
-function calculatePage5Differences(first: any, second: any): Page5Comparison {
+function calculatePage5Differences(first: Page5Summary, second: Page5Summary): Page5Comparison {
   return {
     laborSubtotal_Diff: second.laborSubtotal - first.laborSubtotal,
     materialsSubtotal_Diff: second.materialsSubtotal - first.materialsSubtotal,
@@ -145,7 +186,7 @@ function calculatePage5Differences(first: any, second: any): Page5Comparison {
   };
 }
 
-function generateCSV(comparison: any[]): string {
+function generateCSV(comparison: ComparisonItem[]): string {
   const headers = [
     'LineItemNumber_Estimate1',
     'Description',

@@ -38,11 +38,13 @@ export interface Page5Summary {
 }
 
 export interface PDFMetadata {
-  date: string;
+  date?: string;
   pages: number;
   projectName?: string;
   contractor?: string;
   version?: string;
+  textLength?: number;
+  first500Chars?: string;
 }
 
 export interface ComparisonResult {
