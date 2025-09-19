@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pdf from 'pdf-parse';
 import { PDFData, LineItem, Page5Summary } from '@/types/pdf';
 
 export async function POST(request: NextRequest) {
@@ -21,13 +20,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Convert File to Buffer for pdf-parse
+    // Convert File to Buffer for pdfjs-dist
     const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const buffer = new Uint8Array(arrayBuffer);
     
-    // Parse PDF and extract text
-    const data = await pdf(buffer);
-    const text = data.text;
+    // Use pdfjs-dist to parse the PDF
+    const pdfjsLib = await import('pdfjs-dist');
+    
+    // Set up the worker
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+    
+    const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+    const numPages = pdf.numPages;
+    
+    let text = '';
+    
+    // Extract text from all pages
+    for (let i = 1; i <= numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items
+        .map((item) => 'str' in item ? (item as { str: string }).str : '')
+        .join(' ');
+      text += pageText + '\n';
+    }
     
     // Parse actual line items from the extracted text
     const lineItems = parseXactimateLineItems(text);
@@ -48,7 +64,7 @@ export async function POST(request: NextRequest) {
       page5Summary,
       metadata: {
         date: new Date().toISOString(),
-        pages: data.numpages
+        pages: numPages
       }
     };
 
