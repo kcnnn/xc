@@ -1,46 +1,9 @@
 import { PDFData, LineItem, Page5Summary } from '@/types/pdf';
 
 export async function processPDF(file: File): Promise<PDFData> {
-  const arrayBuffer = await file.arrayBuffer();
-  const buffer = new Uint8Array(arrayBuffer);
-  
-  // Use pdfjs-dist to parse the PDF
-  const pdfjsLib = await import('pdfjs-dist');
-  
-  // Set up the worker
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-  
-  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-  const numPages = pdf.numPages;
-  
-  let fullText = '';
-  
-  // Extract text from all pages
-  for (let i = 1; i <= numPages; i++) {
-    const page = await pdf.getPage(i);
-    const textContent = await page.getTextContent();
-    const pageText = textContent.items
-      .map((item) => 'str' in item ? (item as { str: string }).str : '')
-      .join(' ');
-    fullText += pageText + '\n';
-  }
-  
-  // Parse line items
-  const lineItems = parseLineItems(fullText);
-  
-  // Parse page 5 summary
-  const page5Summary = parsePage5Summary(fullText);
-  
-  return {
-    filename: file.name,
-    lineItems,
-    page5Summary,
-    metadata: {
-      pages: numPages,
-      textLength: fullText.length,
-      first500Chars: fullText.substring(0, 500)
-    }
-  };
+  // This function is only used client-side, so we'll use pdf-parse instead
+  // which is more suitable for server-side processing
+  throw new Error('processPDF should be called from the API route, not directly from client');
 }
 
 function parseLineItems(text: string): LineItem[] {

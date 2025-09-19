@@ -5,7 +5,7 @@ import { FileText, AlertCircle, CheckCircle } from 'lucide-react';
 import PDFUploader from '@/components/PDFUploader';
 import ComparisonResults from '@/components/ComparisonResults';
 import { PDFData } from '@/types/pdf';
-import { processPDF, comparePDFs } from '@/utils/pdfProcessor';
+import { comparePDFs } from '@/utils/pdfProcessor';
 
 interface ComparisonItem {
   lineItemNumber_Estimate1?: string;
@@ -76,7 +76,20 @@ export default function Home() {
     setIsProcessing(true);
     
     try {
-      const pdfData = await processPDF(file);
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await fetch('/api/process-pdf', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to process PDF');
+      }
+      
+      const pdfData = await response.json();
       
       setPdfData(prev => ({
         ...prev,
@@ -103,7 +116,23 @@ export default function Home() {
     setError(null);
 
     try {
-      const results = comparePDFs(pdfData.first, pdfData.second);
+      const response = await fetch('/api/compare-pdfs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          first: pdfData.first,
+          second: pdfData.second,
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to compare PDFs');
+      }
+      
+      const results = await response.json();
       setComparisonResults(results);
     } catch (err) {
       setError(`Error comparing PDFs: ${err instanceof Error ? err.message : 'Unknown error'}`);

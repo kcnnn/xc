@@ -1,14 +1,10 @@
 import type { NextConfig } from "next";
 
-const isProd = process.env.NODE_ENV === "production";
-
 const nextConfig: NextConfig = {
-  output: "export",
   images: { unoptimized: true },
-  basePath: isProd ? "/xc" : "",
-  assetPrefix: isProd ? "/xc/" : "",
-  trailingSlash: true,
-  outputFileTracingRoot: "/Users/ken/xactimate-compare",
+  experimental: {
+    serverComponentsExternalPackages: ['pdf-parse', 'pdfjs-dist']
+  }
 };
 
 export default nextConfig;
