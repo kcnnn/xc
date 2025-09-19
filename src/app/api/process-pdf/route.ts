@@ -24,17 +24,18 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = new Uint8Array(arrayBuffer);
     
-    // Use pdfjs-dist to parse the PDF
+    // Use pdfjs-dist to parse the PDF without worker
     const pdfjsLib = await import('pdfjs-dist');
     
-    // Set up the worker for server environment
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+    // Disable worker for serverless environment
+    pdfjsLib.GlobalWorkerOptions.workerSrc = false;
     
     const pdf = await pdfjsLib.getDocument({ 
       data: buffer,
       useWorkerFetch: false,
       isEvalSupported: false,
-      useSystemFonts: true
+      useSystemFonts: true,
+      disableWorker: true
     }).promise;
     const numPages = pdf.numPages;
     
@@ -42,13 +43,22 @@ export async function POST(request: NextRequest) {
     
     // Extract text from all pages
     for (let i = 1; i <= numPages; i++) {
-      const page = await pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items
-        .map((item) => 'str' in item ? (item as { str: string }).str : '')
-        .join(' ');
-      text += pageText + '\n';
+      try {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item) => 'str' in item ? (item as { str: string }).str : '')
+          .join(' ');
+        text += pageText + '\n';
+        console.log(`Page ${i} text length: ${pageText.length}`);
+      } catch (pageError) {
+        console.error(`Error processing page ${i}:`, pageError);
+        throw new Error(`Failed to process page ${i}: ${pageError instanceof Error ? pageError.message : 'Unknown error'}`);
+      }
     }
+    
+    console.log(`Total extracted text length: ${text.length}`);
+    console.log(`First 500 characters: ${text.substring(0, 500)}`);
     
     // Parse actual line items from the extracted text
     const lineItems = parseXactimateLineItems(text);
