@@ -27,10 +27,15 @@ export async function POST(request: NextRequest) {
     // Use pdfjs-dist to parse the PDF
     const pdfjsLib = await import('pdfjs-dist');
     
-    // Set up the worker
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+    // Set up the worker for server environment
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
     
-    const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+    const pdf = await pdfjsLib.getDocument({ 
+      data: buffer,
+      useWorkerFetch: false,
+      isEvalSupported: false,
+      useSystemFonts: true
+    }).promise;
     const numPages = pdf.numPages;
     
     let text = '';
@@ -71,8 +76,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     console.error('Error processing PDF:', error);
+    
+    // Provide more specific error messages
+    let errorMessage = 'Failed to process PDF file. Please ensure the file is not corrupted and contains readable text.';
+    
+    if (error instanceof Error) {
+      if (error.message.includes('Invalid PDF')) {
+        errorMessage = 'Invalid PDF file. Please ensure this is a valid PDF document.';
+      } else if (error.message.includes('Password required')) {
+        errorMessage = 'This PDF is password protected. Please provide an unprotected PDF.';
+      } else if (error.message.includes('worker')) {
+        errorMessage = 'PDF processing service temporarily unavailable. Please try again.';
+      }
+    }
+    
     return NextResponse.json(
-      { error: 'Failed to process PDF file. Please ensure the file is not corrupted and contains readable text.' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
